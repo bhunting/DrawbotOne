@@ -8,7 +8,6 @@ class MotorController
 {
   Serial _port;
 
-  boolean _useSmartGeometry = true;
   boolean _dryRun = false;
   boolean _stopped = false;
   boolean _plotMode = false;
@@ -19,28 +18,14 @@ class MotorController
   int _penState = 0;
   int _commandCount = 0;
 
-  float _gearCircumference = 90.5;// was 89.5;  // 90.5 / pi = 28.8 mm, over an inch in diameter
-                                                // gear circumference is used throughout the code
-  float _gearDiameter = _gearCircumference / PI;
-
-  float _machineAxleWidth = 966.0; // 903.0 + (2.0*31.5);  // Where does the 31.5 come from? 
-                                                            // _machineAxleWidth is ONLY used in the next
-                                                           // calculation.  Get rid of it I say. 
-  float _machineWidth = _machineAxleWidth - _gearDiameter; // 966.0 - 28.4887348  <-- for Wilba's bot
-                                                           // machine width is from the tangent point
-                                                           // where the chain leaves the spool
-                                                           // Do the motor axle to motor axle width minus
-                                                          // twice the radius for the tangent point to
-                                                         // tangent point width. 
-                                                         // For a drawbot with a fixed eyelet that the 
-                                                         // fishing line goes through just use the eyelet
-                                                         // to eyelet distance as the machine width.
+  float _spoolDiameter = 10;  // diameter of where the string wraps up in mm
+  float _spoolCircumference = _spoolDiameter * PI; // distance around spool in mm
+  
+  float _machineWidth = 625; // eyelet to eyelet distance in mm
   float _machineHeight = 1200.0; // used in the draw routine
 
-  float _penOffsetY = 6.718;  // What are the pen offsets?
-  float _penOffsetX = 6.718;  // The offset of the pen location in the
-                              // gondola that differs from the XY instersection
-                              // point of the strings along vectors A and B ??
+  float _penOffsetY = 15;  // in mm, x distance from pen center to string connection point on gondola
+  float _penOffsetX = 30;  // in mm, y distance from pen center to string connection point on gondola
 
   int _motorStepsPerRev = 3200; // 200 step / rev motor using
                                 // EggBot board 16 micro steps setting
@@ -63,7 +48,7 @@ class MotorController
 
     // in mm
   float _homePosY = 0;
-  PVector _homeAB = new PVector(0, 0); // A and B are the cord lengths from the spool to the gondola
+  PVector _homeAB = new PVector(0, 0); // A and B are the cord lengths from the spool to the gondola connections
                                         // Use a PVector because it is a tuple.  
                                         // PVector.x holds A and Pvector.y holds B
 
@@ -114,7 +99,7 @@ void init(String portName)
     _penState = 0;
     penUp();
 
-    setHome( 250.0 - 21.5 );
+    setHome( 250.0 );
 }
 
 //-----------------------------------------------------------------------------
@@ -169,38 +154,11 @@ void init(String portName)
   }
 
 //-----------------------------------------------------------------------------
-// Tries to account for tangent point of cord leaving spool
-// Not useful for eyelet to eyelet style of drawbot.
-// return m + n
-// m = sqrt( x^2 + y^2 - r^2 )
-// n = r * ( PI - arcsin( x / sqrt( x^2 + y^2 ) ) - arcsin( sqrt( x^2 + y^2 - r^2 ) / sqrt( x^2 + y^2 ) ) )
-//
-// return( sqrt(x^2+y^2) + r*(PI-asin(x/sqrt(x^2+y^2))-asin(sqrt(x^2+y^2-r^2)/sqrt(x^2+y^2))) )
-// 
-// w is axle to axle X dimension
-// r is radius of chain gears, used so that calculation can be from gear tangent to gear tangent
-  float XYtoLength( float x, float y, float w, float r )
-  {
-    //println("XYtoLength("+x+","+y+","+w+","+r+")");
-    float d = sqrt( x*x + y*y );
-    float m = sqrt( d*d - r*r );
-
-    float a = asin( x / d );
-    float b = asin( m / d );
-    float c = PI - a - b;
-    float n = c * r;
-
-    return m + n;
-  }
-
-//-----------------------------------------------------------------------------
-// Assumes string runs over the inside of the spools
-// machineWidth is already axle to axle width minus gear diameter.
-// machineWidth is already inner spool face to inner spool face.
-//
-// Again these calculations are simpler if using
-// fishing line going through eyelets.
-// machineWidth would always be eyelet to eyelet distance.
+// The point p is the tip of the pen.
+// A and B are the string lengths from the spool to the 
+// connection points on the gondola.  Offset the
+// the calculations by the XY pen to AB connection
+// points on the gondola
 //
 // This math assumes the two vectors A and B (representing
 // the strings from motor A and motor B) meet at the intersection
@@ -212,60 +170,15 @@ void init(String portName)
 // 
   PVector XYtoAB( PVector p )
   {
-    if ( _useSmartGeometry )
-    {
-      // Currently using (left motor axle + gear radius, 0 ) as the origin
-      // and _machineWidth as distance between gears along axis between motor axles
-      // Find X,Y position of both axles (why??)
-      PVector axle0 = new PVector( 0 - (_gearDiameter/2.0), 0 );
-      PVector axle1 = new PVector( _machineWidth + (_gearDiameter/2.0), 0 );
-
-      // Since the strings do not actually meet at the same point
-      // on the gondola, they connect on both sides and above the pen,
-      // the intersection point of the two vectors changes based on the 
-      // angle of the vectors A and B.
-      // Calculate the cord connection points on the gondola
-      // as p0 and p1.  Also the geometry is "upside down" in that
-      // the Y values get larger down the page instead of up.
-      // p0 is the pen point (p.x, p.y) minus the pen X offset and 
-      // minus the pen Y offset.  The string connection points are actually
-      // above and to the left and right of the center of the pen.
+      // points p0 and p1 are the string connection points on the 
+      // gondola of strings A and B
       PVector p0 = new PVector( p.x - _penOffsetX, p.y - _penOffsetY );
       PVector p1 = new PVector( p.x + _penOffsetX, p.y - _penOffsetY );
-
-      // why is the x0 and x1 from the axle center
-      // to the connection point?  The picture Wilba drew on the
-      // xkcd forum shows x0 and x1 from the tangent point on the
-      // spool to the connection point on the gondola.
-      // The spool radius is passed into the XYtoLenght()
-      // calculation, but still why the axle to axle.
-      // Is it to support a changing spool radius due to 
-      // cord build up on the spool?
-      // Cord build up on Wilba's drawbot is not an issue
-      // due to using a beaded cord hanging over a fixed size spool
-      // and draping down to the ground.  The spool size is constant
-      // for all A and B lengths.
-      float x0 = p0.x - axle0.x; // the distance from the axle to the gondola connection point
-      float x1 = axle1.x - p1.x;
-      float y = p0.y; // == p1.y
-      float w = axle1.x - axle0.x; // axle center to axle center
-      float r = _gearDiameter/2.0;
-
-      float a = XYtoLength( x0, y, w, r );
-      float b = XYtoLength( x1, y, w, r );
-
-      return new PVector( a, b );
-    }
-    else
-    {
-      // simple eq. for now.
-      // This equation is correct for eyelet to eyelet type of drawbot.
-      PVector p0 = new PVector( p.x - _penOffsetX, p.y - _penOffsetY );
-      PVector p1 = new PVector( p.x + _penOffsetX, p.y - _penOffsetY );
+      // point (0,0) is the eyelet point of string A
+      // point (_machineWidth,0) is the eyelet of string B
       float a = dist( 0, 0, p0.x, p0.y );
       float b = dist( _machineWidth, 0, p1.x, p1.y );
-      return new PVector( a, b );
-    }
+      return new PVector( a, b ); // return a tuple with p.x as A and p.y as B
   }
 
 //-----------------------------------------------------------------------------
@@ -447,8 +360,8 @@ void init(String portName)
 //-----------------------------------------------------------------------------
   PVector getCurrentAB()
   {
-    return new PVector( _homeAB.x + ( _deltaStepsA * ( _gearCircumference / _motorStepsPerRev ) ), 
-    _homeAB.y + ( _deltaStepsB * ( _gearCircumference / _motorStepsPerRev ) ), 0 );
+    return new PVector( _homeAB.x + ( _deltaStepsA * ( _spoolCircumference / _motorStepsPerRev ) ), 
+    _homeAB.y + ( _deltaStepsB * ( _spoolCircumference / _motorStepsPerRev ) ), 0 );
   }
 
 //-----------------------------------------------------------------------------
@@ -456,14 +369,7 @@ void init(String portName)
   // which were rounded to nearest step.
   PVector getCurrentXY()
   {
-    if ( _useSmartGeometry )
-    {
-      return _currentPos;
-    }
-    else
-    {
       return ABtoXY( getCurrentAB() );
-    }
   }
 
 //-----------------------------------------------------------------------------
@@ -621,8 +527,8 @@ void init(String portName)
     PVector currentAB = getCurrentAB();
     PVector currentXY = getCurrentXY(); // NB: this is the REAL position of the pen, different to _plotPos
 
-    int stepsA = round( ( newAB.x - currentAB.x ) / ( _gearCircumference / _motorStepsPerRev ) );
-    int stepsB = round( ( newAB.y - currentAB.y ) / ( _gearCircumference / _motorStepsPerRev ) );
+    int stepsA = round( ( newAB.x - currentAB.x ) / ( _spoolCircumference / _motorStepsPerRev ) );
+    int stepsB = round( ( newAB.y - currentAB.y ) / ( _spoolCircumference / _motorStepsPerRev ) );
 
     float speed = ( _penState == 0 ) ? _motorSpeedPenDown : _motorSpeedPenUp;
     float distance = dist( currentXY.x, currentXY.y, pt.x, pt.y );
@@ -674,10 +580,10 @@ void init(String portName)
   void setupMoveMotors( float directionA, float directionB )
   {
     // HACK: args in steps, convert to distance
-    float distanceA = directionA * _setupMoveMotorsStepSize * ( _gearCircumference / _motorStepsPerRev );
-    float distanceB = directionB * _setupMoveMotorsStepSize * ( _gearCircumference / _motorStepsPerRev );
-    int stepsA = round( distanceA / ( _gearCircumference / _motorStepsPerRev ) );
-    int stepsB = round( distanceB / ( _gearCircumference / _motorStepsPerRev ) );
+    float distanceA = directionA * _setupMoveMotorsStepSize * ( _spoolCircumference / _motorStepsPerRev );
+    float distanceB = directionB * _setupMoveMotorsStepSize * ( _spoolCircumference / _motorStepsPerRev );
+    int stepsA = round( distanceA / ( _spoolCircumference / _motorStepsPerRev ) );
+    int stepsB = round( distanceB / ( _spoolCircumference / _motorStepsPerRev ) );
 
     float speed = _motorSpeedSetup;
     float distance = max( abs(distanceA), abs(distanceB) );
@@ -716,10 +622,10 @@ void init(String portName)
       //float rpsA = (float)stepsA / ((float)duration / 1000.0) / (float)_motorStepsPerRev;
       //float rpsB = (float)stepsB / ((float)duration / 1000.0) / (float)_motorStepsPerRev;
       //PVector currentXY = getCurrentXY();
-      //PVector newXY = ABtoXY( new PVector( getCurrentAB().x + (float)stepsA/(float)_motorStepsPerRev*(float)_gearCircumference,
-      //                                    getCurrentAB().y + (float)stepsB/(float)_motorStepsPerRev*(float)_gearCircumference ) );
+      //PVector newXY = ABtoXY( new PVector( getCurrentAB().x + (float)stepsA/(float)_motorStepsPerRev*(float)_spoolCircumference,
+      //                                    getCurrentAB().y + (float)stepsB/(float)_motorStepsPerRev*(float)_spoolCircumference ) );
       //float speed = dist(currentXY.x, currentXY.y, newXY.x, newXY.y) / ((float)duration/1000.0);
-      //println("speedA="+ rpsA*_gearCircumference +"mm/s speedB=" + rpsB*_gearCircumference + "mm/s speed="+speed+"mm/s");
+      //println("speedA="+ rpsA*_spoolCircumference +"mm/s speedB=" + rpsB*_spoolCircumference + "mm/s speed="+speed+"mm/s");
 
       // totalStepsA,totalStepsB will approach zero.
       totalStepsA -= stepsA;
