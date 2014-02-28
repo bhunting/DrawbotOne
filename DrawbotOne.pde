@@ -46,7 +46,7 @@ PVector _shapeOffset = new PVector(0, 0);
 //-----------------------------------------------------------------------------
 void setup()
 {
-  size(900, 1000 );
+  size(800, 800 );
 
   // VERY IMPORTANT: Allways initialize the library before using it
   RG.init(this);
@@ -176,7 +176,7 @@ void draw()
 
     PVector motorA = new PVector( 0, 0 );
     PVector motorB = new PVector( _motorController._machineWidth, 0 );
-    float gearRadius = _motorController._gearDiameter/2;
+    float gearRadius = _motorController._spoolDiameter/2;
 
     strokeWeight(1/_screenScale);
     noFill();
@@ -415,7 +415,7 @@ void mouseWheel(int delta)
 void setupGUI()
 {
   PVector guiTopLeft = new PVector( 0, height - _guiHeight );
-  int x, y;
+  int x, y, btnWidth, btnHeight, btnSpacingY;
 
 
   cp5.getWindow().setPositionOfTabs( (int)guiTopLeft.x, (int)guiTopLeft.y );
@@ -436,72 +436,76 @@ void setupGUI()
       .setId(3)
         ;
 
-  y = (int)guiTopLeft.y + 20;
   x = (int)guiTopLeft.x + 20;
+  y = (int)guiTopLeft.y + 20;
+  btnHeight = 20;
+  btnWidth = 80; 
+  btnSpacingY = 25;   
 
   cp5.addButton("btnPlot")
-    .setPosition(x, y)
-      .setSize(80, 20)
+    .setPosition(x, y+btnSpacingY*0)
+      .setSize(btnWidth, btnHeight)
         .setCaptionLabel("Plot")
           ;   
 
   cp5.addButton("btnPlotTime")
-    .setPosition(x, y+20)
-      .setSize(80, 20)
+    .setPosition(x, y+btnSpacingY*1)
+      .setSize(btnWidth, btnHeight)
         .setCaptionLabel("Plot Time")
           ;   
   cp5.addButton("btnResumePlot")
-    .setPosition(x, y+40)
-      .setSize(80, 20)
+    .setPosition(x, y+btnSpacingY*2)
+      .setSize(btnWidth, btnHeight)
         .setCaptionLabel("Resume Plot")
           ;                          
   cp5.addButton("btnPlotStipple")
-    .setPosition(x, y+60)
-      .setSize(80, 20)
+    .setPosition(x, y+btnSpacingY*3)
+      .setSize(btnWidth, btnHeight)
         .setCaptionLabel("Plot Stipple")
           ;                          
 
   cp5.addButton("btnPlotStippleTime")
-    .setPosition(x, y+80)
-      .setSize(80, 20)
+    .setPosition(x, y+btnSpacingY*4)
+      .setSize(btnWidth, btnHeight)
         .setCaptionLabel("Plot Stipple Time")
           ;                           
 
+  btnWidth = 60;
   cp5.addButton("btnMoveToHome")
-    .setPosition(x, y)
-      .setSize(60, 20)
+    .setPosition(x, y+btnSpacingY*0)
+      .setSize(btnWidth, btnHeight)
         .setCaptionLabel("Move To Home")
           .moveTo("motor_setup")
             ;
 
   cp5.addButton("btnTestPattern")
-    .setPosition(x, y+40)
-      .setSize(60, 20)
+    .setPosition(x, y+btnSpacingY*1)
+      .setSize(btnWidth, btnHeight)
         .setCaptionLabel("Test Pattern")
           .moveTo("motor_setup")
             ;    
   cp5.addButton("btnPenUp")
-    .setPosition(x, y+60)
-      .setSize(60, 20)
+    .setPosition(x, y+btnSpacingY*2)
+      .setSize(btnWidth, btnHeight)
         .setCaptionLabel("Pen Up")
           .moveTo("motor_setup")
             ;   
   cp5.addButton("btnPenDown")
-    .setPosition(x, y+80)
-      .setSize(60, 20)
+    .setPosition(x, y+btnSpacingY*3)
+      .setSize(btnWidth, btnHeight)
         .setCaptionLabel("Pen Down")
           .moveTo("motor_setup")
             ;   
   cp5.addButton("btnVersion")
-    .setPosition(x, y+100)
-      .setSize(60, 20)
+    .setPosition(x, y+btnSpacingY*4)
+      .setSize(btnWidth, btnHeight)
         .setCaptionLabel("Version")
           .moveTo("motor_setup")
             ;   
 
   cp5.addButton("btnQueryButton")
-    .setPosition(x, y+120)
-      .setSize(60, 20)
+    .setPosition(x, y+btnSpacingY*5)
+      .setSize(btnWidth, btnHeight)
         .setCaptionLabel("QueryBtn")
           .moveTo("motor_setup")
             ;   
@@ -574,7 +578,9 @@ void setupGUI()
         .setCaptionLabel("\\")
           .moveTo("motor_setup")
             ;
-            
+   
+   // ------ setup debug menu
+   
   debugTextarea = cp5.addTextarea("debugtext")
                   .setPosition(100, 100)
                   .setSize(200, 200)
@@ -583,9 +589,54 @@ void setupGUI()
                   .setColor(color(200))
                   .setColorBackground(color(0, 100))
                   .setColorForeground(color(255, 100))
-                  .moveTo("motor_setup");
+                  .moveTo("debug");
 
   //debugConsole = cp5.addConsole(debugTextarea);//
+
+  x = (int)guiTopLeft.x + 20;
+  y = (int)guiTopLeft.y + 20;
+  btnWidth = 100;
+
+  cp5.addButton("btnEnableLog")
+    .setPosition(x, y+btnSpacingY*0)
+      .setSize(btnWidth, btnHeight)
+        .setCaptionLabel("Enable Logging")
+          .moveTo("debug")
+            ;
+
+  cp5.addButton("btnDisableLog")
+    .setPosition(x, y+btnSpacingY*1)
+      .setSize(btnWidth, btnHeight)
+        .setCaptionLabel("Disable Logging")
+          .moveTo("debug")
+            ;    
+  cp5.addButton("btnShowLog")
+    .setPosition(x, y+btnSpacingY*2)
+      .setSize(btnWidth, btnHeight)
+        .setCaptionLabel("Show Log Output")
+          .moveTo("debug")
+            ;   
+  cp5.addButton("btnHideLog")
+    .setPosition(x, y+btnSpacingY*3)
+      .setSize(btnWidth, btnHeight)
+        .setCaptionLabel("Hide Log Output")
+          .moveTo("debug")
+            ;   
+  cp5.addButton("btnClearLog")
+    .setPosition(x, y+btnSpacingY*4)
+      .setSize(btnWidth, btnHeight)
+        .setCaptionLabel("Clear Log")
+          .moveTo("debug")
+            ;   
+
+  cp5.addButton("btnSaveLog")
+    .setPosition(x, y+btnSpacingY*5)
+      .setSize(btnWidth, btnHeight)
+        .setCaptionLabel("Save Log")
+          .moveTo("debug")
+            ;   
+
+
               
 }
 
@@ -876,16 +927,56 @@ public void btnMoveDownRight(int theValue)
 //-----------------------------------------------------------------------------
 public void btnVersion(int theValue) 
 {
-   debugTextarea.show();
   _motorController.sendCommand("V\r");
 }
 
 //-----------------------------------------------------------------------------
 public void btnQueryButton(int theValue) 
 {
-   debugTextarea.hide();
   _motorController.sendCommand("QB\r");
 }
+
+//-----------------------------------------------------------------------------
+public void btnEnableLog(int theValue) 
+{
+  // set a global flag'ish to allow writes to the log
+}
+
+//-----------------------------------------------------------------------------
+public void btnDisableLog(int theValue) 
+{
+  // set a global flag'ish to dis-allow writes to the log
+}
+
+//-----------------------------------------------------------------------------
+public void btnShowLog(int theValue) 
+{
+   debugTextarea.show();
+}
+
+//-----------------------------------------------------------------------------
+public void btnHideLog(int theValue) 
+{
+   debugTextarea.hide();
+}
+
+//-----------------------------------------------------------------------------
+public void btnClearLog(int theValue) 
+{
+   debugTextarea.clear();
+}
+
+//-----------------------------------------------------------------------------
+public void btnSaveLog(int theValue) 
+{
+  // write the log to a log file on disk
+}
+
+
+
+
+
+
 
 
 //-----------------------------------------------------------------------------
