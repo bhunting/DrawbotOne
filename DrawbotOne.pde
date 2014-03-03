@@ -21,6 +21,7 @@ ControlP5 cp5;
 Textarea debugTextarea;
 Println debugConsole;
 
+// offset in screen space to plotter workspace
 PVector _screenTranslate = new PVector(0, 0);
 float _screenScale = 1;
 
@@ -30,14 +31,18 @@ PVector _mousePress = null;
 PVector _lineStart = new PVector(0, 0);
 PVector _lineEnd = new PVector(0, 0);
 
+int _displaySizeX = 800;
+int _displaySizeY = 900;
 int _guiHeight = 200;
+int _plotHeight = _displaySizeY - _guiHeight;
+String _imageFilePath = "";
 boolean _guiInitialized = false;
 
 MotorController _motorController;
 ShapeManager _shapeManager = new ShapeManager();
 RPoint[][] _shapePoints;
 
-PImage _image;
+PImage _image; // processing class for loading and describing bitmap images
 float _imageScale = 1; // pixels per mm ??
 float _pageOffsetY = 0;
 PVector _pageSize = new PVector( 210, 297 ); // A4 portrait
@@ -46,7 +51,7 @@ PVector _shapeOffset = new PVector(0, 0);
 //-----------------------------------------------------------------------------
 void setup()
 {
-  size(800, 800 );
+  size(_displaySizeX, _displaySizeY );
 
   // VERY IMPORTANT: Allways initialize the library before using it
   RG.init(this);
@@ -66,8 +71,9 @@ void setup()
                         { public void mouseWheelMoved(MouseWheelEvent mwe) 
                              { mouseWheel(mwe.getWheelRotation()); } } ); 
 
-  _screenTranslate.set( 40, 40, 0 );
-  _screenScale = 0.91;
+  // scale working space into screen space
+  _screenScale = 1.0;
+  _screenTranslate.set( (_displaySizeX - _motorController._machineWidth*_screenScale)/2, 40, 0 ); // center machine width in the screen space
 
   _lineStart = _motorController.getCurrentXY().get();
   _lineEnd = _motorController.getCurrentXY().get();
@@ -77,11 +83,11 @@ void setup()
   //_shapeManager.loadShape("test1.svg");
   //_shapeOffset.set( 30, 50, 0 );
 
-  _image = loadImage( "freckles.jpg" );
-  _imageScale = 0.195;
+//  _image = loadImage( "freckles.jpg" );
+//  _imageScale = 0.195;
   //_imageScale = 0.5;
-  _shapeManager.rasterizeImage( _image, _imageScale );
-  _shapeOffset.set( 5, 50, 0 );
+//  _shapeManager.rasterizeImage( _image, _imageScale );
+  _shapeOffset.set( 0, 0, 0 );
 }
 
 //-----------------------------------------------------------------------------
@@ -125,10 +131,11 @@ PVector getShapeOrigin()
 //-----------------------------------------------------------------------------
 void draw()
 {
-  background(192);
+  background(220,220,220,128);
 
   pushMatrix();
   {
+    // draw a rectangle of the working space of the drawbot - the pen reach
     translate(_screenTranslate.x, _screenTranslate.y);
     scale(_screenScale);
 
@@ -139,19 +146,18 @@ void draw()
 
     pushMatrix();
     {
+      // draw the paper footprint
       PVector pageOrigin = getPageOrigin();
       translate(pageOrigin.x, pageOrigin.y);
 
-      fill(64);
-      noStroke();
-      rect( 1, 1, _pageSize.x, _pageSize.y );
       fill(255);
-      strokeWeight(1/_screenScale);
-      stroke(0);
-      rect( 0, 0, _pageSize.x, _pageSize.y );
+      strokeWeight(1/_screenScale); // set line thickness
+      stroke(0);                    // set border (outline) color
+//      rect( 0, 0, _pageSize.x, _pageSize.y ); // draw the paper
     }
     popMatrix();
 
+    // paint the original image, tint it as partially see through
     pushMatrix();
     {
       if ( _image != null )
@@ -166,49 +172,51 @@ void draw()
     }
     popMatrix();
 
+    // Draw the little X at HOME at the top of the paper
     PVector home = _motorController.getHome();
     noFill();
     strokeWeight(1/_screenScale);
     stroke(0);
     float n = 5;
-    line( home.x-n, home.y-n, home.x+n, home.y+n );
-    line( home.x+n, home.y-n, home.x-n, home.y+n );
+//    line( home.x-n, home.y-n, home.x+n, home.y+n );
+//    line( home.x+n, home.y-n, home.x-n, home.y+n );
 
+    // Draw the 
     PVector motorA = new PVector( 0, 0 );
     PVector motorB = new PVector( _motorController._machineWidth, 0 );
-    float gearRadius = _motorController._spoolDiameter/2;
+    float spoolRadius = _motorController._spoolDiameter/2;
 
     strokeWeight(1/_screenScale);
     noFill();
 
     stroke(#0000FF);
-    ellipse( motorA.x - gearRadius, motorA.y, 2*gearRadius, 2*gearRadius );
+//    ellipse( motorA.x - spoolRadius, motorA.y, 2*spoolRadius, 2*spoolRadius );
     stroke(#00FF00);
-    ellipse( motorB.x + gearRadius, motorB.y, 2*gearRadius, 2*gearRadius );
+//    ellipse( motorB.x + spoolRadius, motorB.y, 2*spoolRadius, 2*spoolRadius );
 
     stroke(#0000FF);
-    line( motorA.x, motorA.y, _lineStart.x, _lineStart.y );
-    line( motorA.x, motorA.y, _lineEnd.x, _lineEnd.y );
+//    line( motorA.x, motorA.y, _lineStart.x, _lineStart.y );
+//    line( motorA.x, motorA.y, _lineEnd.x, _lineEnd.y );
     float r;
     r = dist( motorA.x, motorA.y, _lineStart.x, _lineStart.y );
-    //ellipse( motorA.x, motorA.y, 2*r, 2*r );
-    arc( motorA.x, motorA.y, 2*r, 2*r, 0, PI/2 );
+//    ellipse( motorA.x, motorA.y, 2*r, 2*r );
+//    arc( motorA.x, motorA.y, 2*r, 2*r, 0, PI/2 );
     r = dist( motorA.x, motorA.y, _lineEnd.x, _lineEnd.y );
-    //ellipse( motorA.x, motorA.y, 2*r, 2*r );
-    arc( motorA.x, motorA.y, 2*r, 2*r, 0, PI/2 );
+//    ellipse( motorA.x, motorA.y, 2*r, 2*r );
+//    arc( motorA.x, motorA.y, 2*r, 2*r, 0, PI/2 );
 
     stroke(#00FF00);
-    line( motorB.x, motorB.y, _lineStart.x, _lineStart.y );
-    line( motorB.x, motorB.y, _lineEnd.x, _lineEnd.y );
+//    line( motorB.x, motorB.y, _lineStart.x, _lineStart.y );
+//    line( motorB.x, motorB.y, _lineEnd.x, _lineEnd.y );
     r = dist( motorB.x, motorB.y, _lineStart.x, _lineStart.y );
     //ellipse( motorB.x, motorB.y, 2*r, 2*r );
-    arc(  motorB.x, motorB.y, 2*r, 2*r, PI/2, PI );
+//    arc(  motorB.x, motorB.y, 2*r, 2*r, PI/2, PI );
     r = dist( motorB.x, motorB.y, _lineEnd.x, _lineEnd.y );
     //ellipse( motorB.x, motorB.y, 2*r, 2*r );
-    arc(  motorB.x, motorB.y, 2*r, 2*r, PI/2, PI );
+//    arc(  motorB.x, motorB.y, 2*r, 2*r, PI/2, PI );
 
     stroke(#FF0000);
-    line( _lineStart.x, _lineStart.y, _lineEnd.x, _lineEnd.y );
+//    line( _lineStart.x, _lineStart.y, _lineEnd.x, _lineEnd.y );
 
     /*
         stroke(#FF00FF);
@@ -237,6 +245,7 @@ void draw()
   popMatrix();
 
 
+  // draw the processed image
   pushMatrix();
   {
     translate(_screenTranslate.x, _screenTranslate.y);
@@ -253,7 +262,7 @@ void draw()
       pushMatrix();
       PVector shapeOrigin = getShapeOrigin();
       translate(shapeOrigin.x, shapeOrigin.y);
-      _shapeManager.getPlotShape().draw();
+//      _shapeManager.getPlotShape().draw();
       popMatrix();
 
       if ( _shapePoints == null )
@@ -268,7 +277,7 @@ void draw()
   // Draw background for GUI area
   fill(64);
   noStroke();
-  rect( 0, height-_guiHeight, width, _guiHeight );
+//  rect( 0, height-_guiHeight, width, _guiHeight );
 }
 
 //-----------------------------------------------------------------------------
@@ -414,9 +423,8 @@ void mouseWheel(int delta)
 //-----------------------------------------------------------------------------
 void setupGUI()
 {
-  PVector guiTopLeft = new PVector( 0, height - _guiHeight );
-  int x, y, btnWidth, btnHeight, btnSpacingY;
-
+  PVector guiTopLeft = new PVector( 20, height - _guiHeight );
+  int x, y, btnWidth, btnHeight, btnSpacingY, btnSpacingX;
 
   cp5.getWindow().setPositionOfTabs( (int)guiTopLeft.x, (int)guiTopLeft.y );
 
@@ -436,11 +444,13 @@ void setupGUI()
       .setId(3)
         ;
 
+  // ------------- main (default) menu -------------------------------
   x = (int)guiTopLeft.x + 20;
   y = (int)guiTopLeft.y + 20;
   btnHeight = 20;
   btnWidth = 80; 
-  btnSpacingY = 25;   
+  btnSpacingY = btnHeight + 5;
+  btnSpacingX = btnWidth + 20;  
 
   cp5.addButton("btnPlot")
     .setPosition(x, y+btnSpacingY*0)
@@ -470,6 +480,26 @@ void setupGUI()
         .setCaptionLabel("Plot Stipple Time")
           ;                           
 
+  cp5.addButton("btnLoadImage")
+    .setPosition(x+btnSpacingX*1, y+btnSpacingY*0)
+      .setSize(btnWidth, btnHeight)
+        .setCaptionLabel("Load Image")
+          ;         
+
+  cp5.addTextfield("txtImagePath")
+    .setPosition(x+btnSpacingX*1, y+btnSpacingY*1)
+      .setSize(btnWidth, btnHeight)
+          ;         
+
+  cp5.addSlider("_imageScale")
+    .setPosition(x+btnSpacingX*1, y+btnSpacingY*2)
+      .setSize(btnWidth, btnHeight)
+     .setRange(0,1)
+     ;
+
+          
+
+  //------------------ motor setup menu --------------------
   btnWidth = 60;
   cp5.addButton("btnMoveToHome")
     .setPosition(x, y+btnSpacingY*0)
@@ -510,12 +540,12 @@ void setupGUI()
           .moveTo("motor_setup")
             ;   
 
-   cp5.addNumberbox("ctrlMotorSpeedPenUp",   _motorController._motorSpeedPenUp,   x+120, y+0*20, 100, 14).setId(3).setRange(0,200).setMultiplier(1).setDirection(Controller.HORIZONTAL).moveTo("motor_setup");
-   cp5.addNumberbox("ctrlMotorSpeedPenDown", _motorController._motorSpeedPenDown, x+120, y+2*20, 100, 14).setId(4).setRange(0,200).setMultiplier(1).setDirection(Controller.HORIZONTAL).moveTo("motor_setup");  
-   cp5.addNumberbox("ctrlServoPosUp",        _motorController._servoPosUp,        x+120, y+4*20, 100, 14).setId(5).setRange(0,200).setMultiplier(1).setDirection(Controller.HORIZONTAL).moveTo("motor_setup");         
-   cp5.addNumberbox("ctrlServoPosDown",      _motorController._servoPosDown,      x+300, y+0*20, 100, 14).setId(6).setRange(0,200).setMultiplier(1).setDirection(Controller.HORIZONTAL).moveTo("motor_setup");        
-   cp5.addNumberbox("ctrlServoRateDown",     _motorController._servoRateDown,     x+300, y+2*20, 100, 14).setId(7).setRange(0,200).setMultiplier(1).setDirection(Controller.HORIZONTAL).moveTo("motor_setup");         
-   cp5.addNumberbox("ctrlServoRateUp",       _motorController._servoRateUp,       x+300, y+4*20, 100, 14).setId(8).setRange(0,200).setMultiplier(1).setDirection(Controller.HORIZONTAL).moveTo("motor_setup");         
+   cp5.addNumberbox("ctrlMotorSpeedPenUp",   _motorController._motorSpeedPenUp,   x+120, y+0*20, 100, 14).setId(3).setRange(0,100).setMultiplier(1).setDirection(Controller.HORIZONTAL).moveTo("motor_setup");
+   cp5.addNumberbox("ctrlMotorSpeedPenDown", _motorController._motorSpeedPenDown, x+120, y+2*20, 100, 14).setId(4).setRange(0,100).setMultiplier(1).setDirection(Controller.HORIZONTAL).moveTo("motor_setup");  
+   cp5.addNumberbox("ctrlServoPosUp",        _motorController._servoPosUp,        x+120, y+4*20, 100, 14).setId(5).setRange(0,100).setMultiplier(1).setDirection(Controller.HORIZONTAL).moveTo("motor_setup");         
+   cp5.addNumberbox("ctrlServoPosDown",      _motorController._servoPosDown,      x+300, y+0*20, 100, 14).setId(6).setRange(0,100).setMultiplier(1).setDirection(Controller.HORIZONTAL).moveTo("motor_setup");        
+   cp5.addNumberbox("ctrlServoRateDown",     _motorController._servoRateDown,     x+300, y+2*20, 100, 14).setId(7).setRange(0,100).setMultiplier(1).setDirection(Controller.HORIZONTAL).moveTo("motor_setup");         
+   cp5.addNumberbox("ctrlServoRateUp",       _motorController._servoRateUp,       x+300, y+4*20, 100, 14).setId(8).setRange(0,100).setMultiplier(1).setDirection(Controller.HORIZONTAL).moveTo("motor_setup");         
 
   x = (int)guiTopLeft.x + 600;
   int buttonSize = 40;
@@ -579,7 +609,7 @@ void setupGUI()
           .moveTo("motor_setup")
             ;
    
-   // ------ setup debug menu
+   // ------ setup debug menu -----------------
    
   debugTextarea = cp5.addTextarea("debugtext")
                   .setPosition(100, 100)
@@ -635,8 +665,6 @@ void setupGUI()
         .setCaptionLabel("Save Log")
           .moveTo("debug")
             ;   
-
-
               
 }
 
@@ -770,7 +798,30 @@ public void btnPlotStippleTime(int theValue)
   printDryRunStats();
 }
 
+//-----------------------------------------------------------------------------
+public void btnLoadImage(int theValue) 
+{
+  String filePath = cp5.get(Textfield.class,"txtImagePath").getText();
+  println("file path = " + filePath );
 
+  PImage img; // temp img to see if file loads ok
+
+  if( filePath.length() != 0 )
+  {
+    img = loadImage( filePath );
+    if( null != img )
+    {
+      _image = img;
+      _imageFilePath = filePath;
+    }
+  }
+  cp5.get(Textfield.class,"txtImagePath").setText( _imageFilePath );
+  
+  //_shapeManager.rasterizeImage( _image, _imageScale );
+}
+
+
+//------------ BUTTONS ON MOTOR MENU ------------------------------------------
 //-----------------------------------------------------------------------------
 public void btnMoveToHome(int theValue) 
 {
