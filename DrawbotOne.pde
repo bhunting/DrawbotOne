@@ -489,13 +489,21 @@ void setupGUI()
   cp5.addTextfield("txtImagePath")
     .setPosition(x+btnSpacingX*1, y+btnSpacingY*1)
       .setSize(btnWidth, btnHeight)
+        .setAutoClear(false)
           ;         
 
   cp5.addSlider("_imageScale")
     .setPosition(x+btnSpacingX*1, y+btnSpacingY*2)
       .setSize(btnWidth, btnHeight)
-     .setRange(0,1)
+        .setRange(0,1)
+          .setLabelVisible(true)
      ;
+
+  cp5.addButton("btnRasterizeImage")
+    .setPosition(x+btnSpacingX*1, y+btnSpacingY*3)
+      .setSize(btnWidth, btnHeight)
+        .setCaptionLabel("Rasterize Image")
+          ;         
 
           
 
@@ -802,8 +810,21 @@ public void btnPlotStippleTime(int theValue)
 public void btnLoadImage(int theValue) 
 {
   String filePath = cp5.get(Textfield.class,"txtImagePath").getText();
-  println("file path = " + filePath );
+  println("image file path = " + filePath );
+  dbLoadImage( filePath );
+}
 
+//-----------------------------------------------------------------------------
+public void txtImagePath(String theText) 
+{
+  // automatically receives results from controller input
+  println("image file path : "+theText);
+  dbLoadImage( theText );
+}
+
+//-----------------------------------------------------------------------------
+public void dbLoadImage( String filePath )
+{
   PImage img; // temp img to see if file loads ok
 
   if( filePath.length() != 0 )
@@ -813,12 +834,22 @@ public void btnLoadImage(int theValue)
     {
       _image = img;
       _imageFilePath = filePath;
+      println("_imageFilePath = " + _imageFilePath );
     }
   }
-  cp5.get(Textfield.class,"txtImagePath").setText( _imageFilePath );
-  
-  //_shapeManager.rasterizeImage( _image, _imageScale );
 }
+
+//-----------------------------------------------------------------------------
+public void btnRasterizeImage(int theValue) 
+{
+  println("rasterize image " + _imageFilePath );
+  
+  if( null != _image )
+  {
+    _shapeManager.rasterizeImage( _image, _imageScale );
+  }  
+}
+
 
 
 //------------ BUTTONS ON MOTOR MENU ------------------------------------------
