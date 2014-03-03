@@ -22,7 +22,7 @@ class MotorController
   float _spoolCircumference = _spoolDiameter * PI; // distance around spool in mm
   
   float _machineWidth = 625; // eyelet to eyelet distance in mm
-  float _machineHeight = 1200.0; // used in the draw routine
+  float _machineHeight = 600.0; // used in the draw routine
 
   float _penOffsetY = 15;  // in mm, x distance from pen center to string connection point on gondola
   float _penOffsetX = 30;  // in mm, y distance from pen center to string connection point on gondola

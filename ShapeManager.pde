@@ -61,6 +61,8 @@ class ShapeManager
   }
 
 //-----------------------------------------------------------------------------
+// Called with a bitmap image and scale
+//
   void rasterizeImage( PImage img, float imgScale )
   {
     PVector lineVector = new PVector( 3, -1 );
@@ -80,7 +82,7 @@ class ShapeManager
     RShape rasterLines = getRasterLines( outlineShape, lineVector, lineSeparation );
 
     RShape rasterLines2 = new RShape();
-    for ( int i=0; i<rasterLines.countChildren(); i++ )
+    for ( int i = 0; i < rasterLines.countChildren(); i++ )
     {
       // assume it is a line with two points (not an arc or curve)
       RShape shp = rasterLines.children[i];
