@@ -22,8 +22,9 @@ Textarea debugTextarea;
 Println debugConsole;
 
 // offset in screen space to plotter workspace
+// set below to corner of plotter space in the screen space
 PVector _screenTranslate = new PVector(0, 0);
-float _screenScale = 1;
+float _screenScale = 1; // scale of plotter space in screen space
 
 PVector _mouse = new PVector(0, 0);
 PVector _mousePress = null;
@@ -45,8 +46,14 @@ RPoint[][] _shapePoints;
 PImage _image; // processing class for loading and describing bitmap images
 float _imageScale = 1; // pixels per mm ??
 float _pageOffsetY = 0;
-PVector _pageSize = new PVector( 210, 297 ); // A4 portrait
+PVector _pageSizeA4 = new PVector( 210, 297 ); // A4 portrait
+PVector _pageSize = new PVector( _pageSizeA4.x, _pageSizeA4.y ); // A4 portrait
+PVector _pageUpperLeft = new PVector( 100, 100 );
+PVector _pageLowerRight = new PVector( _pageUpperLeft.x + _pageSize.x, _pageUpperLeft.y+_pageSize.y); 
 PVector _shapeOffset = new PVector(0, 0);
+
+boolean _showImage = true;
+boolean _showProcessedImage = true;
 
 //-----------------------------------------------------------------------------
 void setup()
@@ -117,8 +124,9 @@ PVector modelToScreen( PVector p )
 //-----------------------------------------------------------------------------
 PVector getPageOrigin()
 {
-  PVector home = _motorController.getHome();
-  return new PVector( home.x - (_pageSize.x/2), home.y + _pageOffsetY );
+  //PVector home = _motorController.getHome();
+  //return new PVector( home.x - (_pageSize.x/2), home.y + _pageOffsetY );
+  return new PVector( getPageUpperLeft().x, getPageUpperLeft().y );
 }
 
 //-----------------------------------------------------------------------------
@@ -127,50 +135,75 @@ PVector getShapeOrigin()
   PVector pageOrigin = getPageOrigin();
   return new PVector( pageOrigin.x + _shapeOffset.x, pageOrigin.y + _shapeOffset.y );
 }
+//-----------------------------------------------------------------------------
+PVector getPageUpperLeft()
+{
+  return( _motorController.getPageUpperLeft() );
+}
+
+//-----------------------------------------------------------------------------
+PVector getPageLowerRight()
+{
+  return( _motorController.getPageLowerRight() );
+}
+
 
 //-----------------------------------------------------------------------------
 void draw()
 {
   background(220,220,220,128);
+  // draw a rectangle around the gui area
+  fill(140);
+  stroke(0);
+  rect( 0, _displaySizeY-_guiHeight, _displaySizeX, _displaySizeY );
+
 
   pushMatrix();
   {
     // draw a rectangle of the working space of the drawbot - the pen reach
+    // translate the drawing from screen space into plotter space, offset and scale
     translate(_screenTranslate.x, _screenTranslate.y);
     scale(_screenScale);
 
+    // draw a filled rectangle representing the 
+    // outline of the plotter workspace
     fill(168);
-    noStroke();
+    stroke(0);
     rect( 0, 0, _motorController._machineWidth, _motorController._machineHeight );
 
-
+    // draw the paper surface
     pushMatrix();
     {
       // draw the paper footprint
+      // get the paper origin and translate the
+      // drawing space into the paper space
       PVector pageOrigin = getPageOrigin();
       translate(pageOrigin.x, pageOrigin.y);
 
       fill(255);
       strokeWeight(1/_screenScale); // set line thickness
       stroke(0);                    // set border (outline) color
-//      rect( 0, 0, _pageSize.x, _pageSize.y ); // draw the paper
+      rect( 0, 0, _pageSize.x, _pageSize.y ); // draw the paper
     }
     popMatrix();
 
     // paint the original image, tint it as partially see through
-    pushMatrix();
+    if( _showImage )
     {
-      if ( _image != null )
+      pushMatrix();
       {
-        PVector shapeOrigin = getShapeOrigin();
-        translate(shapeOrigin.x, shapeOrigin.y);
-        scale( _imageScale );
-        tint(255, 255, 255, 30);
-        image( _image, 0, 0 );
-        noTint();
+        if ( _image != null )
+        {
+          PVector shapeOrigin = getShapeOrigin();
+          translate(shapeOrigin.x, shapeOrigin.y);
+          scale( _imageScale );
+          tint(255, 255, 255, 30);
+          image( _image, 0, 0 );
+          noTint();
+        }
       }
+      popMatrix();
     }
-    popMatrix();
 
     // Draw the little X at HOME at the top of the paper
     PVector home = _motorController.getHome();
@@ -178,10 +211,10 @@ void draw()
     strokeWeight(1/_screenScale);
     stroke(0);
     float n = 5;
-//    line( home.x-n, home.y-n, home.x+n, home.y+n );
-//    line( home.x+n, home.y-n, home.x-n, home.y+n );
+    line( home.x-n, home.y-n, home.x+n, home.y+n );
+    line( home.x+n, home.y-n, home.x-n, home.y+n );
 
-    // Draw the 
+    // Draw the spools in the upper left and upper right
     PVector motorA = new PVector( 0, 0 );
     PVector motorB = new PVector( _motorController._machineWidth, 0 );
     float spoolRadius = _motorController._spoolDiameter/2;
@@ -190,94 +223,104 @@ void draw()
     noFill();
 
     stroke(#0000FF);
-//    ellipse( motorA.x - spoolRadius, motorA.y, 2*spoolRadius, 2*spoolRadius );
+    ellipse( motorA.x - spoolRadius, motorA.y, 2*spoolRadius, 2*spoolRadius );
     stroke(#00FF00);
-//    ellipse( motorB.x + spoolRadius, motorB.y, 2*spoolRadius, 2*spoolRadius );
+    ellipse( motorB.x + spoolRadius, motorB.y, 2*spoolRadius, 2*spoolRadius );
 
+    // draw a line and arc from the motor spool to the starting point
+    // draw a line and arc from the motor spool to the ending point
+    // starting and ending points can be set by clicking the mouse
+    // or by click-dragging the mouse to set start and end
+
+    // draw the A (left) side line and arc representing the string
     stroke(#0000FF);
-//    line( motorA.x, motorA.y, _lineStart.x, _lineStart.y );
-//    line( motorA.x, motorA.y, _lineEnd.x, _lineEnd.y );
+    line( motorA.x, motorA.y, _lineStart.x, _lineStart.y );
+    line( motorA.x, motorA.y, _lineEnd.x, _lineEnd.y );
     float r;
     r = dist( motorA.x, motorA.y, _lineStart.x, _lineStart.y );
-//    ellipse( motorA.x, motorA.y, 2*r, 2*r );
-//    arc( motorA.x, motorA.y, 2*r, 2*r, 0, PI/2 );
+    //ellipse( motorA.x, motorA.y, 2*r, 2*r );
+    arc( motorA.x, motorA.y, 2*r, 2*r, 0, PI/2 );
     r = dist( motorA.x, motorA.y, _lineEnd.x, _lineEnd.y );
-//    ellipse( motorA.x, motorA.y, 2*r, 2*r );
-//    arc( motorA.x, motorA.y, 2*r, 2*r, 0, PI/2 );
+    //ellipse( motorA.x, motorA.y, 2*r, 2*r );
+    arc( motorA.x, motorA.y, 2*r, 2*r, 0, PI/2 );
 
+    // draw the B (right) side line and arc representing the string
     stroke(#00FF00);
-//    line( motorB.x, motorB.y, _lineStart.x, _lineStart.y );
-//    line( motorB.x, motorB.y, _lineEnd.x, _lineEnd.y );
+    line( motorB.x, motorB.y, _lineStart.x, _lineStart.y );
+    line( motorB.x, motorB.y, _lineEnd.x, _lineEnd.y );
     r = dist( motorB.x, motorB.y, _lineStart.x, _lineStart.y );
     //ellipse( motorB.x, motorB.y, 2*r, 2*r );
-//    arc(  motorB.x, motorB.y, 2*r, 2*r, PI/2, PI );
+    arc(  motorB.x, motorB.y, 2*r, 2*r, PI/2, PI );
     r = dist( motorB.x, motorB.y, _lineEnd.x, _lineEnd.y );
     //ellipse( motorB.x, motorB.y, 2*r, 2*r );
-//    arc(  motorB.x, motorB.y, 2*r, 2*r, PI/2, PI );
+    arc(  motorB.x, motorB.y, 2*r, 2*r, PI/2, PI );
 
+    // draw a line between the start and end points
+    // show the pen path
     stroke(#FF0000);
-//    line( _lineStart.x, _lineStart.y, _lineEnd.x, _lineEnd.y );
+    line( _lineStart.x, _lineStart.y, _lineEnd.x, _lineEnd.y );
 
     /*
-        stroke(#FF00FF);
+    // Draw a 10 segment lerp arc between start and end points
+    //
+    
+    stroke(#FF00FF);
      
-     PVector motorStart = _motorController.XYtoAB( _lineStart );
-     PVector motorEnd = _motorController.XYtoAB( _lineEnd ); 
+    PVector motorStart = _motorController.XYtoAB( _lineStart );
+    PVector motorEnd = _motorController.XYtoAB( _lineEnd ); 
      
-     noFill();
-     beginShape();
-     {
-     for ( int i=0; i<=10; i++ )
-     {
-     float t = (float)i / 10.0;
-     
-     float mx = lerp( motorStart.x, motorEnd.x, t );
-     float my = lerp( motorStart.y, motorEnd.y, t );
-     
-     PVector p = new PVector( mx, my );
-     p = _motorController.ABtoXY( p );
-     vertex( p.x, p.y );
-     }
-     }
-     endShape();
-     */
+    noFill();
+    beginShape();
+    {
+       for ( int i=0; i<=10; i++ )
+       {
+         float t = (float)i / 10.0;
+         
+         float mx = lerp( motorStart.x, motorEnd.x, t );
+         float my = lerp( motorStart.y, motorEnd.y, t );
+         
+         PVector p = new PVector( mx, my );
+         p = _motorController.ABtoXY( p );
+         vertex( p.x, p.y );
+       }
+    }
+    endShape();
+    */
   }
   popMatrix();
 
 
   // draw the processed image
-  pushMatrix();
+  if( _showProcessedImage )
   {
-    translate(_screenTranslate.x, _screenTranslate.y);
-    scale(_screenScale);
-
-    RG.ignoreStyles();
-
-    noFill();
-    strokeWeight(1/_screenScale);
-    stroke(0);
-
-    if ( _shapeManager.getPlotShape() != null )
+    pushMatrix();
     {
-      pushMatrix();
-      PVector shapeOrigin = getShapeOrigin();
-      translate(shapeOrigin.x, shapeOrigin.y);
-//      _shapeManager.getPlotShape().draw();
-      popMatrix();
-
-      if ( _shapePoints == null )
+      translate(_screenTranslate.x, _screenTranslate.y);
+      scale(_screenScale);
+  
+      RG.ignoreStyles();
+  
+      noFill();
+      strokeWeight(1/_screenScale);
+      stroke(0);
+  
+      if ( _shapeManager.getPlotShape() != null )
       {
-        _shapePoints = _shapeManager.getPointsInPaths( _shapeManager.getPlotShape(), shapeOrigin );
+        pushMatrix();
+        PVector shapeOrigin = getShapeOrigin();
+        translate(shapeOrigin.x, shapeOrigin.y);
+        _shapeManager.getPlotShape().draw();
+        popMatrix();
+  
+        if ( _shapePoints == null )
+        {
+          _shapePoints = _shapeManager.getPointsInPaths( _shapeManager.getPlotShape(), shapeOrigin );
+        }
+        //drawShapePoints(_shapePoints);
       }
-      //drawShapePoints(_shapePoints);
     }
+    popMatrix();
   }
-  popMatrix();
-
-  // Draw background for GUI area
-  fill(64);
-  noStroke();
-//  rect( 0, height-_guiHeight, width, _guiHeight );
 }
 
 //-----------------------------------------------------------------------------
@@ -423,7 +466,7 @@ void mouseWheel(int delta)
 //-----------------------------------------------------------------------------
 void setupGUI()
 {
-  PVector guiTopLeft = new PVector( 20, height - _guiHeight );
+  PVector guiTopLeft = new PVector( 20, height - _guiHeight + 10 );
   int x, y, btnWidth, btnHeight, btnSpacingY, btnSpacingX;
 
   cp5.getWindow().setPositionOfTabs( (int)guiTopLeft.x, (int)guiTopLeft.y );
@@ -497,6 +540,7 @@ void setupGUI()
       .setSize(btnWidth, btnHeight)
         .setRange(0,1)
           .setLabelVisible(true)
+            .setCaptionLabel("")
      ;
 
   cp5.addButton("btnRasterizeImage")
@@ -505,6 +549,19 @@ void setupGUI()
         .setCaptionLabel("Rasterize Image")
           ;         
 
+  cp5.addToggle("_showImage")
+     .setPosition(width-100, (int)guiTopLeft.y+10)
+       .setSize(20,20)
+         .setCaptionLabel("Show Image")
+           .getCaptionLabel().align(ControlP5.LEFT, ControlP5.RIGHT_OUTSIDE).setPaddingX(30)
+     ;
+    
+  cp5.addToggle("_showProcessedImage")
+     .setPosition(width-100, (int)guiTopLeft.y+40)
+       .setSize(20,20)
+         .setCaptionLabel("Show Proc Image")
+           .getCaptionLabel().align(ControlP5.LEFT, ControlP5.RIGHT_OUTSIDE).setPaddingX(30)
+     ;
           
 
   //------------------ motor setup menu --------------------
