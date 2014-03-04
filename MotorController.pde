@@ -47,7 +47,7 @@ class MotorController
   int _servoRateUp = 600; // was 300
 
     // in mm
-  float _homePosY = 0;
+  float _homePosY = 200;
   PVector _homeAB = new PVector(0, 0); // A and B are the cord lengths from the spool to the gondola connections
                                         // Use a PVector because it is a tuple.  
                                         // PVector.x holds A and Pvector.y holds B
@@ -72,6 +72,9 @@ class MotorController
   int _preDryRun_deltaStepsB;
   int _preDryRun_penState;
   PApplet myApplet;
+  
+  PVector _pageUpperLeft = new PVector( _machineWidth/2-_pageSizeA4.x/2, _homePosY );
+  PVector _pageLowerRight = new PVector( _machineWidth/2+_pageSizeA4.x/2, _homePosY+_pageSizeA4.y );
 
 //-----------------------------------------------------------------------------
   MotorController( PApplet applet )
@@ -99,7 +102,19 @@ void init(String portName)
     _penState = 0;
     penUp();
 
-    setHome( 250.0 );
+    setHome( _homePosY );
+}
+
+//-----------------------------------------------------------------------------
+PVector getPageUpperLeft()
+{
+  return _pageUpperLeft;
+}
+
+//-----------------------------------------------------------------------------
+PVector getPageLowerRight()
+{
+  return _pageLowerRight;
 }
 
 //-----------------------------------------------------------------------------
