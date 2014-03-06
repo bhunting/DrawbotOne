@@ -73,9 +73,6 @@ class MotorController
   int _preDryRun_penState;
   PApplet myApplet;
   
-  PVector _pageUpperLeft = new PVector( _machineWidth/2-_pageSizeA4.x/2, _homePosY );
-  PVector _pageLowerRight = new PVector( _machineWidth/2+_pageSizeA4.x/2, _homePosY+_pageSizeA4.y );
-
 //-----------------------------------------------------------------------------
   MotorController( PApplet applet )
   {
@@ -102,19 +99,13 @@ void init(String portName)
     _penState = 0;
     penUp();
 
-    setHome( _homePosY );
+    setHome();
 }
 
 //-----------------------------------------------------------------------------
-PVector getPageUpperLeft()
+PVector getCurrentPosition()
 {
-  return _pageUpperLeft;
-}
-
-//-----------------------------------------------------------------------------
-PVector getPageLowerRight()
-{
-  return _pageLowerRight;
+  return _plotPos;
 }
 
 //-----------------------------------------------------------------------------
@@ -359,9 +350,8 @@ PVector getPageLowerRight()
   }
 
 //-----------------------------------------------------------------------------
-  void setHome( float y )
+  void setHome()
   {
-    _homePosY = y;
     _homeAB = XYtoAB( getHome() );
     _currentPos.set( getHome() );
     _plotPos.set( getHome() );
@@ -514,6 +504,7 @@ PVector getPageLowerRight()
 //-----------------------------------------------------------------------------
   void moveTo( PVector pt )
   {
+    println("moveTo x,y : "+pt.x+"  "+pt.y);
     if ( _stopped )
     {
       return;
@@ -552,6 +543,8 @@ PVector getPageLowerRight()
     moveMotors( stepsA, stepsB, duration, /*updateDeltaSteps=*/ true );
     // cache the REAL position of the pen (because we can't calc it from A,B just yet)
     _currentPos = pt.get();
+    
+    println("_currentPos x,y : "+_currentPos.x+"  "+_currentPos.y);
 
     if ( _penState == 0 )
     {
@@ -594,6 +587,7 @@ PVector getPageLowerRight()
 //-----------------------------------------------------------------------------
   void setupMoveMotors( float directionA, float directionB )
   {
+    println("setupMoveMotors A,B : "+directionA+" "+directionB);
     // HACK: args in steps, convert to distance
     float distanceA = directionA * _setupMoveMotorsStepSize * ( _spoolCircumference / _motorStepsPerRev );
     float distanceB = directionB * _setupMoveMotorsStepSize * ( _spoolCircumference / _motorStepsPerRev );
@@ -604,7 +598,7 @@ PVector getPageLowerRight()
     float distance = max( abs(distanceA), abs(distanceB) );
     int duration = round( distance / speed * 1000.0);
 
-    moveMotors( stepsA, stepsB, duration, /*updateDeltaSteps=*/ false );
+    moveMotors( stepsA, stepsB, duration, /*updateDeltaSteps=*/ true );
   }
 
 //-----------------------------------------------------------------------------

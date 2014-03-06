@@ -55,6 +55,8 @@ PVector _shapeOffset = new PVector(0, 0);
 boolean _showImage = true;
 boolean _showProcessedImage = true;
 
+int _stepsPerClick = 1;
+
 //-----------------------------------------------------------------------------
 void setup()
 {
@@ -95,6 +97,12 @@ void setup()
   //_imageScale = 0.5;
 //  _shapeManager.rasterizeImage( _image, _imageScale );
   _shapeOffset.set( 0, 0, 0 );
+
+  PVector home = _motorController.getHome();
+  _pageUpperLeft.x = home.x - (_pageSize.x/2);
+  _pageUpperLeft.y = home.y + _pageOffsetY;
+  _pageLowerRight.x = _pageUpperLeft.x + _pageSize.x;
+  _pageLowerRight.y = _pageUpperLeft.y + _pageSize.y; 
 }
 
 //-----------------------------------------------------------------------------
@@ -126,7 +134,7 @@ PVector getPageOrigin()
 {
   //PVector home = _motorController.getHome();
   //return new PVector( home.x - (_pageSize.x/2), home.y + _pageOffsetY );
-  return new PVector( getPageUpperLeft().x, getPageUpperLeft().y );
+  return new PVector( _pageUpperLeft.x, _pageUpperLeft.y );
 }
 
 //-----------------------------------------------------------------------------
@@ -135,18 +143,6 @@ PVector getShapeOrigin()
   PVector pageOrigin = getPageOrigin();
   return new PVector( pageOrigin.x + _shapeOffset.x, pageOrigin.y + _shapeOffset.y );
 }
-//-----------------------------------------------------------------------------
-PVector getPageUpperLeft()
-{
-  return( _motorController.getPageUpperLeft() );
-}
-
-//-----------------------------------------------------------------------------
-PVector getPageLowerRight()
-{
-  return( _motorController.getPageLowerRight() );
-}
-
 
 //-----------------------------------------------------------------------------
 void draw()
@@ -412,15 +408,15 @@ void mouseReleased()
 
 
       /*
-            float x = _lineStart.x;
+       float x = _lineStart.x;
        float y = _lineStart.y;
        float r = 0.1;
        for ( int i=1; i<=10; i++ )
        {
-       _motorController.fillCircle( new PVector(x,y), r, 0.4 );
-       _motorController.penUp();
-       x += 3*r+2;
-       r += 0.1;
+         _motorController.fillCircle( new PVector(x,y), r, 0.4 );
+         _motorController.penUp();
+         x += 3*r+2;
+         r += 0.1;
        }
        */
     }
@@ -453,10 +449,10 @@ void mouseDragged()
 
 void mouseWheel(int delta)
 {
-  PVector oldMouse = screenToModel( new PVector(mouseX, mouseY) );
-  _screenScale *= 1 + (float)delta/10.0;
-  oldMouse = modelToScreen( oldMouse );
-  _screenTranslate.set( _screenTranslate.x + (mouseX - oldMouse.x ), _screenTranslate.y + ( mouseY - oldMouse.y ), 0 );
+//  PVector oldMouse = screenToModel( new PVector(mouseX, mouseY) );
+//  _screenScale *= 1 + (float)delta/10.0;
+//  oldMouse = modelToScreen( oldMouse );
+//  _screenTranslate.set( _screenTranslate.x + (mouseX - oldMouse.x ), _screenTranslate.y + ( mouseY - oldMouse.y ), 0 );
 }
 
 
@@ -644,7 +640,8 @@ void setupGUI()
   cp5.addButton("btnMove")
     .setPosition(x+1*buttonSize, y+1*buttonSize)
       .setSize(buttonSize-1, buttonSize-1)
-        .moveTo("motor_setup")
+        .setCaptionLabel("O")
+          .moveTo("motor_setup")
           ;
   cp5.addButton("btnMoveRight")
     .setPosition(x+2*buttonSize, y+1*buttonSize)
@@ -673,6 +670,41 @@ void setupGUI()
         .setCaptionLabel("\\")
           .moveTo("motor_setup")
             ;
+            
+  cp5.addSlider("_stepsPerClick")
+    .setPosition(x, y+3*buttonSize)
+      .setSize(btnWidth, btnHeight)
+        .setRange(1,100)
+          .setLabelVisible(true)
+            .setCaptionLabel("steps")
+               .moveTo("motor_setup")
+     ;
+    
+  x = (int)guiTopLeft.x + 500;
+  y = height - _guiHeight + 30;
+  btnWidth = 80;
+  
+  cp5.addButton("btnSetUpperLeft")
+    .setPosition(x, y+btnSpacingY*0)
+      .setSize(btnWidth, btnHeight)
+        .setCaptionLabel("Set Upper Left")
+          .moveTo("motor_setup")
+            ;
+
+  cp5.addButton("btnSetLowerRight")
+    .setPosition(x, y+btnSpacingY*1)
+      .setSize(btnWidth, btnHeight)
+        .setCaptionLabel("Set Lower Right")
+          .moveTo("motor_setup")
+            ;    
+
+  cp5.addButton("btnSetHome")
+    .setPosition(x, y+btnSpacingY*2)
+      .setSize(btnWidth, btnHeight)
+        .setCaptionLabel("Set Home")
+          .moveTo("motor_setup")
+            ;    
+
    
    // ------ setup debug menu -----------------
    
@@ -914,6 +946,9 @@ public void btnRasterizeImage(int theValue)
 public void btnMoveToHome(int theValue) 
 {
   _motorController.moveToHome();
+  
+  _lineStart = _motorController.getHome();
+  _lineEnd = _lineStart;
 }
 
 //-----------------------------------------------------------------------------
@@ -1018,49 +1053,81 @@ public void btnPenDown(int theValue)
 public void btnMoveUpLeft(int theValue) 
 {
   println("btnMoveUpLeft");
-  _motorController.setupMoveMotors( -1, 0 );
+  _motorController.setupMoveMotors( -_stepsPerClick, 0 );
+  
+  _lineStart = _motorController.getCurrentXY();
+  _lineEnd = _lineStart;
+  //println("currentPosition x,y : "+_lineStart.x+"  "+_lineStart.y);
 }
 
 //-----------------------------------------------------------------------------
 public void btnMoveUp(int theValue) 
 {
-  _motorController.setupMoveMotors( -1, -1 );
+  _motorController.setupMoveMotors( -_stepsPerClick, -_stepsPerClick );
+  
+  _lineStart = _motorController.getCurrentXY();
+  _lineEnd = _lineStart;
+  //println("currentPosition x,y : "+_lineStart.x+"  "+_lineStart.y);
 }
 
 //-----------------------------------------------------------------------------
 public void btnMoveUpRight(int theValue) 
 {
-  _motorController.setupMoveMotors( 0, -1 );
+  _motorController.setupMoveMotors( 0, -_stepsPerClick );
+  
+  _lineStart = _motorController.getCurrentXY();
+  _lineEnd = _lineStart;
+  //println("currentPosition x,y : "+_lineStart.x+"  "+_lineStart.y);
 }
 
 //-----------------------------------------------------------------------------
 public void btnMoveLeft(int theValue) 
 {
-  _motorController.setupMoveMotors( -1, 1 );
+  _motorController.setupMoveMotors( -_stepsPerClick, _stepsPerClick );
+  
+  _lineStart = _motorController.getCurrentXY();
+  _lineEnd = _lineStart;
+  //println("currentPosition x,y : "+_lineStart.x+"  "+_lineStart.y);
 }
 
 //-----------------------------------------------------------------------------
 public void btnMoveRight(int theValue) 
 {
-  _motorController.setupMoveMotors( 1, -1 );
+  _motorController.setupMoveMotors( _stepsPerClick, -_stepsPerClick );
+  
+  _lineStart = _motorController.getCurrentXY();
+  _lineEnd = _lineStart;
+  //println("currentPosition x,y : "+_lineStart.x+"  "+_lineStart.y);
 }
 
 //-----------------------------------------------------------------------------
 public void btnMoveDownLeft(int theValue) 
 {
-  _motorController.setupMoveMotors( 0, 1 );
+  _motorController.setupMoveMotors( 0, _stepsPerClick );
+  
+  _lineStart = _motorController.getCurrentXY();
+  _lineEnd = _lineStart;
+  //println("currentPosition x,y : "+_lineStart.x+"  "+_lineStart.y);
 }
 
 //-----------------------------------------------------------------------------
 public void btnMoveDown(int theValue) 
 {
-  _motorController.setupMoveMotors( 1, 1 );
+  _motorController.setupMoveMotors( _stepsPerClick, _stepsPerClick );
+  
+  _lineStart = _motorController.getCurrentXY();
+  _lineEnd = _lineStart;
+  //println("currentPosition x,y : "+_lineStart.x+"  "+_lineStart.y);
 }
 
 //-----------------------------------------------------------------------------
 public void btnMoveDownRight(int theValue) 
 {
-  _motorController.setupMoveMotors( 1, 0 );
+  _motorController.setupMoveMotors( _stepsPerClick, 0 );
+  
+  _lineStart = _motorController.getCurrentXY();
+  _lineEnd = _lineStart;
+  //println("currentPosition x,y : "+_lineStart.x+"  "+_lineStart.y);
 }
 
 //-----------------------------------------------------------------------------
@@ -1075,6 +1142,57 @@ public void btnQueryButton(int theValue)
   _motorController.sendCommand("QB\r");
 }
 
+//-----------------------------------------------------------------------------
+public void btnSetUpperLeft(int theValue) 
+{
+  _pageUpperLeft = _motorController.getCurrentXY();
+  println("upperLeft  x y : "+_pageUpperLeft.x+"  "+_pageUpperLeft.y);
+  println("lowerRight x y : "+_pageLowerRight.x+"  "+_pageLowerRight.y);
+
+  if( _pageUpperLeft.x > (_pageLowerRight.x - 10) )
+  {
+    _pageUpperLeft.x = _pageLowerRight.x - 10;
+  }
+  if( _pageUpperLeft.y > (_pageLowerRight.y-10) )
+  {
+    _pageUpperLeft.y = _pageLowerRight.y - 10;
+  }
+  _pageSize.x = _pageLowerRight.x - _pageUpperLeft.x;
+  _pageSize.y = _pageLowerRight.y - _pageUpperLeft.y;
+  
+  println("pageSize x y : "+_pageSize.x+"  "+_pageSize.y);
+}
+
+//-----------------------------------------------------------------------------
+public void btnSetLowerRight(int theValue) 
+{
+  _pageLowerRight = _motorController.getCurrentXY();
+  println("upperLeft  x y : "+_pageUpperLeft.x+"  "+_pageUpperLeft.y);
+  println("lowerRight x y : "+_pageLowerRight.x+"  "+_pageLowerRight.y);
+  if( _pageLowerRight.x < (_pageUpperLeft.x+10) )
+  {
+    _pageLowerRight.x = _pageUpperLeft.x + 10;
+  }
+  if( _pageLowerRight.y < (_pageUpperLeft.y+10) )
+  {
+    _pageLowerRight.y = _pageUpperLeft.y + 10;
+  }
+  _pageSize.x = _pageLowerRight.x - _pageUpperLeft.x;
+  _pageSize.y = _pageLowerRight.y - _pageUpperLeft.y;
+  
+  println("pageSize x y : "+_pageSize.x+"  "+_pageSize.y);
+}
+
+//-----------------------------------------------------------------------------
+public void btnSetHome(int theValue) 
+{
+  _motorController.setHome();
+  _lineStart = _motorController.getCurrentXY();
+  _lineEnd = _lineStart;
+}
+
+
+//---------------- DEBUG MENU ITEMS -------------------------------------------
 //-----------------------------------------------------------------------------
 public void btnEnableLog(int theValue) 
 {
@@ -1113,11 +1231,7 @@ public void btnSaveLog(int theValue)
 
 
 
-
-
-
-
-
+//-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
 void printDryRunStats()
 {
