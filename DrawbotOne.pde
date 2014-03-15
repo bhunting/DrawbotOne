@@ -20,6 +20,8 @@ import controlP5.*;
 ControlP5 cp5;
 Textarea debugTextarea;
 Println debugConsole;
+DropdownList _dlCommPorts;
+String commPort = "";
 
 // offset in screen space to plotter workspace
 // set below to corner of plotter space in the screen space
@@ -461,6 +463,18 @@ void mouseWheel(int delta)
 ///////////////////////////////////
 // Setup of GUI controls
 ///////////////////////////////////
+static final int id_main_tab = 1;
+static final int id_motor_tab = 2;
+static final int id_debug_tab = 3;
+static final int id_commport_list = 4;
+static final int id_penspeeddown = 5;
+static final int id_penspeedup = 6;
+static final int id_penpositiondown = 7;
+static final int id_penpositionup = 8;
+static final int id_penratedown = 9;
+static final int id_penrateup = 10;
+//static final int id_main_tab = 1;
+//static final int id_main_tab = 1;
 //-----------------------------------------------------------------------------
 void setupGUI()
 {
@@ -472,17 +486,17 @@ void setupGUI()
   cp5.getTab("default")
     .activateEvent(true)
       .setLabel("main")
-        .setId(1)
+        .setId(id_main_tab)
           ;
 
   cp5.addTab("motor_setup")
     .activateEvent(true)
-      .setId(2)
+      .setId(id_motor_tab)
         ;
 
   cp5.addTab("debug")
     .activateEvent(true)
-      .setId(3)
+      .setId(id_debug_tab)
         ;
 
   // ------------- main (default) menu -------------------------------
@@ -620,12 +634,75 @@ void setupGUI()
           .moveTo("motor_setup")
             ;   
 
-   cp5.addNumberbox("ctrlMotorSpeedPenUp",   _motorController._motorSpeedPenUp,   x+120, y+0*20, 100, 14).setId(3).setRange(0,100).setMultiplier(1).setDirection(Controller.HORIZONTAL).moveTo("motor_setup");
-   cp5.addNumberbox("ctrlMotorSpeedPenDown", _motorController._motorSpeedPenDown, x+120, y+2*20, 100, 14).setId(4).setRange(0,100).setMultiplier(1).setDirection(Controller.HORIZONTAL).moveTo("motor_setup");  
-   cp5.addNumberbox("ctrlServoPosUp",        _motorController._servoPosUp,        x+120, y+4*20, 100, 14).setId(5).setRange(0,100).setMultiplier(1).setDirection(Controller.HORIZONTAL).moveTo("motor_setup");         
-   cp5.addNumberbox("ctrlServoPosDown",      _motorController._servoPosDown,      x+300, y+0*20, 100, 14).setId(6).setRange(0,100).setMultiplier(1).setDirection(Controller.HORIZONTAL).moveTo("motor_setup");        
-   cp5.addNumberbox("ctrlServoRateDown",     _motorController._servoRateDown,     x+300, y+2*20, 100, 14).setId(7).setRange(0,100).setMultiplier(1).setDirection(Controller.HORIZONTAL).moveTo("motor_setup");         
-   cp5.addNumberbox("ctrlServoRateUp",       _motorController._servoRateUp,       x+300, y+4*20, 100, 14).setId(8).setRange(0,100).setMultiplier(1).setDirection(Controller.HORIZONTAL).moveTo("motor_setup");         
+   cp5.addNumberbox("PenSpeedUp",     _motorController._motorSpeedPenUp,   x+btnSpacingX*1, y+0*btnSpacingY, btnWidth, btnHeight)
+     .setId(id_penspeedup)
+       .setRange(0,100)
+         .setMultiplier(1)
+           .setDirection(Controller.HORIZONTAL)
+             .moveTo("motor_setup")
+           ;
+   cp5.addNumberbox("PenSpeedDown",   _motorController._motorSpeedPenDown, x+btnSpacingX*1, y+2*btnSpacingY, btnWidth, btnHeight)
+     .setId(id_penspeeddown)
+       .setRange(0,100)
+         .setMultiplier(1)
+           .setDirection(Controller.HORIZONTAL)
+             .moveTo("motor_setup")
+               ;  
+   cp5.addNumberbox("PenPositionUp",  _motorController._servoPosUp,        x+btnSpacingX*1, y+4*btnSpacingY, btnWidth, btnHeight)
+     .setId(id_penpositionup)
+       .setRange(0,100)
+         .setMultiplier(1)
+           .setDirection(Controller.HORIZONTAL)
+             .moveTo("motor_setup")
+               ;         
+   cp5.addNumberbox("PenPositionDonw",_motorController._servoPosDown,      x+btnSpacingX*2, y+0*btnSpacingY, btnWidth, btnHeight)
+     .setId(id_penpositiondown)
+       .setRange(0,100).setMultiplier(1)
+         .setDirection(Controller.HORIZONTAL)
+           .moveTo("motor_setup")
+             ;        
+   cp5.addNumberbox("PenRateUp",      _motorController._servoRateUp,       x+btnSpacingX*2, y+4*btnSpacingY, btnWidth, btnHeight)
+     .setId(id_penrateup).setRange(0,100)
+       .setMultiplier(1)
+         .setDirection(Controller.HORIZONTAL)
+           .moveTo("motor_setup")
+             ;         
+   cp5.addNumberbox("PenRateDown",    _motorController._servoRateDown,     x+btnSpacingX*2, y+2*btnSpacingY, btnWidth, btnHeight)
+     .setId(id_penratedown)
+       .setRange(0,100)
+         .setMultiplier(1)
+           .setDirection(Controller.HORIZONTAL)
+             .moveTo("motor_setup")
+               ;         
+
+
+  cp5.addButton("btnInitCommPort")
+    .setPosition(x+btnSpacingX*4, y+btnSpacingY*0)
+      .setSize(btnWidth, btnHeight)
+        .setCaptionLabel("InitComm")
+          .moveTo("motor_setup")
+            ;   
+
+
+  _dlCommPorts = cp5.addDropdownList("commPort")
+          .setPosition(x+btnSpacingX*3, y+btnHeight*1)
+            .setId(id_commport_list)
+              .moveTo("motor_setup")            
+                ;
+
+  _dlCommPorts.setBackgroundColor(color(190));
+  _dlCommPorts.setItemHeight(btnHeight);
+  _dlCommPorts.setBarHeight(btnHeight);
+  _dlCommPorts.setWidth(80);
+  _dlCommPorts.captionLabel().set("Comm Ports");
+  _dlCommPorts.captionLabel().style().marginTop = 5;
+  _dlCommPorts.captionLabel().style().marginLeft = 5;
+
+  for (int i=0;i< Serial.list().length;i++) 
+  {
+    _dlCommPorts.addItem(Serial.list()[i], i);
+  }
+  _dlCommPorts.setColorActive(color(255, 128));
 
   x = (int)guiTopLeft.x + 600;
   int buttonSize = 40;
@@ -790,19 +867,44 @@ public void controlEvent(ControlEvent theEvent)
   //println("got a control event from controller with id "+theEvent.getId());
    switch(theEvent.getId()) 
    {
-     case(1): // numberboxA is registered with id 1
+     case(id_main_tab): // numberboxA is registered with id 1
        //myColorRect = (int)(theEvent.getController().getValue());
        //println("EVENT 1");
        break;
-     case(2):  // numberboxB is registered with id 2
+     case(id_motor_tab):  // 
        //myColorBackground = (int)(theEvent.getController().getValue());
        //println("EVENT 2");
+       break;
+     case(id_debug_tab):  // 
+       //myColorBackground = (int)(theEvent.getController().getValue());
+       //println("EVENT 2");
+       break;
+     case(id_commport_list):  // 
+       //myColorBackground = (int)(theEvent.getController().getValue());
+       //println("EVENT CommPortList");
+       commPort = theEvent.getGroup().captionLabel().getText(); 
+       //println(commPort);
        break;
      default:
        //println("EVENT " + theEvent.getId());
        break;
    }
 }
+
+
+//void controlEvent(ControlEvent theEvent) { 
+//  if (theEvent.isGroup()) { 
+//    String listName = theEvent.getName(); 
+//    String itemName = theEvent.getGroup().captionLabel().getText(); 
+//    if (listName.equals("Team")) { 
+//      currentTeam = itemName; 
+//    } else if (listName.equals("League")) { 
+//      currentLeague = itemName; 
+//    } 
+//  } 
+//} 
+
+
 
 //-----------------------------------------------------------------------------
 public void ctrlMachineWidth( float theValue ) 
@@ -1066,6 +1168,13 @@ public void btnPenUp(int theValue)
 public void btnPenDown(int theValue) 
 {     
   _motorController.penDown();
+}
+
+//-----------------------------------------------------------------------------
+public void btnInitCommPort(int theValue) 
+{     
+  println(commPort);
+  _motorController.init( commPort );
 }
 
 //-----------------------------------------------------------------------------
