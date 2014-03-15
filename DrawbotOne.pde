@@ -45,6 +45,8 @@ RPoint[][] _shapePoints;
 
 PImage _image; // processing class for loading and describing bitmap images
 float _imageScale = 1; // pixels per mm ??
+int _imageOffsetX = 0;
+int _imageOffsetY = 0;
 float _pageOffsetY = 0;
 PVector _pageSizeA4 = new PVector( 210, 297 ); // A4 portrait
 PVector _pageSize = new PVector( _pageSizeA4.x, _pageSizeA4.y ); // A4 portrait
@@ -141,7 +143,7 @@ PVector getPageOrigin()
 PVector getShapeOrigin()
 {
   PVector pageOrigin = getPageOrigin();
-  return new PVector( pageOrigin.x + _shapeOffset.x, pageOrigin.y + _shapeOffset.y );
+  return new PVector( pageOrigin.x + _shapeOffset.x + _imageOffsetX, pageOrigin.y + _shapeOffset.y + _imageOffsetY );
 }
 
 //-----------------------------------------------------------------------------
@@ -543,7 +545,24 @@ void setupGUI()
     .setPosition(x+btnSpacingX*1, y+btnSpacingY*3)
       .setSize(btnWidth, btnHeight)
         .setCaptionLabel("Rasterize Image")
-          ;         
+          ;
+ 
+   cp5.addSlider("_imageOffsetX")
+    .setPosition(x+btnSpacingX*2, y+btnSpacingY*0)
+      .setSize(btnWidth, btnHeight)
+        .setRange(0,100)
+          .setLabelVisible(true)
+            .setCaptionLabel("Offset X")
+     ;
+         
+   cp5.addSlider("_imageOffsetY")
+    .setPosition(x+btnSpacingX*2, y+btnSpacingY*1)
+      .setSize(btnWidth, btnHeight)
+        .setRange(0,100)
+          .setLabelVisible(true)
+            .setCaptionLabel("Offset Y")
+     ;
+         
 
   cp5.addToggle("_showImage")
      .setPosition(width-100, (int)guiTopLeft.y+10)
