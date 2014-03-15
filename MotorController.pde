@@ -82,17 +82,25 @@ class MotorController
 //-----------------------------------------------------------------------------
 void init(String portName)
 {
+    _port = null;
+  
     // Can't work out how to get error result from Serial.
     // Only open portName if it is in the list of ports.
     for( int i = 0; i < Serial.list().length; i++ )
     {
-      println(Serial.list()[i]);
+      //println(Serial.list()[i]);
       if ( Serial.list()[i].equals( portName ) )
       {
         _port = new Serial(myApplet, portName, 9600);
       }
     }
 
+    if( null == _port )
+    {
+      return;
+    }
+    
+    
     setServoSettings();
 
     // force pen up
