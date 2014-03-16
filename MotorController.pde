@@ -660,6 +660,12 @@ PVector getCurrentPosition()
   }
 
 //-----------------------------------------------------------------------------
+  void disableMotors()
+  {
+      sendCommand("EM,0,0\r" );
+  }
+
+//-----------------------------------------------------------------------------
 // Draw a circle by drawing multiple straight line segments.
 // Assumes this function is called with the pen up.
 // Input the center and radius of the circle.

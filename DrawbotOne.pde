@@ -510,27 +510,35 @@ void setupGUI()
   cp5.addButton("btnPlot")
     .setPosition(x, y+btnSpacingY*0)
       .setSize(btnWidth, btnHeight)
-        .setCaptionLabel("Plot")
+        .setCaptionLabel("Start Plot")
           ;   
 
-  cp5.addButton("btnPlotTime")
+  cp5.addButton("btnStopPlot")
     .setPosition(x, y+btnSpacingY*1)
       .setSize(btnWidth, btnHeight)
-        .setCaptionLabel("Plot Time")
-          ;   
+        .setCaptionLabel("Stop Plot")
+          ;                           
+
   cp5.addButton("btnResumePlot")
     .setPosition(x, y+btnSpacingY*2)
       .setSize(btnWidth, btnHeight)
         .setCaptionLabel("Resume Plot")
           ;                          
-  cp5.addButton("btnPlotStipple")
+
+  cp5.addButton("btnPlotTime")
     .setPosition(x, y+btnSpacingY*3)
+      .setSize(btnWidth, btnHeight)
+        .setCaptionLabel("Plot Time")
+          ;   
+
+  cp5.addButton("btnPlotStipple")
+    .setPosition(x, y+btnSpacingY*4)
       .setSize(btnWidth, btnHeight)
         .setCaptionLabel("Plot Stipple")
           ;                          
 
   cp5.addButton("btnPlotStippleTime")
-    .setPosition(x, y+btnSpacingY*4)
+    .setPosition(x, y+btnSpacingY*5)
       .setSize(btnWidth, btnHeight)
         .setCaptionLabel("Plot Stipple Time")
           ;                           
@@ -801,6 +809,13 @@ void setupGUI()
           .moveTo("motor_setup")
             ;    
 
+  cp5.addButton("btnDisableMotors")
+    .setPosition(x, y+btnSpacingY*3)
+      .setSize(btnWidth, btnHeight)
+        .setCaptionLabel("Motors Off")
+          .moveTo("motor_setup")
+            ;    
+
    
    // ------ setup debug menu -----------------
    
@@ -1060,6 +1075,12 @@ public void btnRasterizeImage(int theValue)
   }  
 }
 
+//-----------------------------------------------------------------------------
+public void btnStopPlot(int theValue) 
+{
+  println("stopping plot");
+}
+
 
 
 //------------ BUTTONS ON MOTOR MENU ------------------------------------------
@@ -1175,6 +1196,13 @@ public void btnInitCommPort(int theValue)
 {     
   println(commPort);
   _motorController.init( commPort );
+}
+
+//-----------------------------------------------------------------------------
+public void btnDisableMotors(int theValue) 
+{     
+  println("disabling motors");
+  _motorController.disableMotors();
 }
 
 //-----------------------------------------------------------------------------
